@@ -114,8 +114,21 @@ result_df["Custom ID"] = result_df.apply(
 # adding in the combined initials column
 df = pd.concat([df, result_df["Custom ID"]], axis=1)
 
-# Overwrite the existing Excel file with the modified DataFrame
-with pd.ExcelWriter(FILE_PATH, mode="w") as writer:
-    df.to_excel(writer, sheet_name="Test Name Files", index=False)
+del df["Author"]
+del df["Title"]
 
-print(df)
+# Overwrite the existing Excel file with the modified DataFrame
+with pd.ExcelWriter(FILE_PATH, mode="a", if_sheet_exists="overlay") as writer:
+    existing_sheet = writer.sheets["sheet1"]
+    startcol = existing_sheet.max_column + 1
+    df.to_excel(
+        writer,
+        sheet_name="sheet1",
+        index=False,
+        startcol=startcol,
+    )
+
+# with pd.ExcelWriter(FILE_PATH) as writer:
+#   df.to_excel(writer, sheet_name="Test Name Files", index=False)
+
+# print(df)
