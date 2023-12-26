@@ -107,11 +107,13 @@ def count_books(result_df):
 count_books(result_df)
 
 
-# Create new Custom ID column and apply it
-
-result_df["Custom ID"] = result_df.apply(
-    lambda row: f"{row['initials']}_{extract_first_letters((row['Title']))}_{row['Count']}",
-    axis=1,
+# Create new Custom ID
+result_df["Custom ID"] = (
+    result_df["initials"]
+    + "_"
+    + result_df["Title"].apply(extract_first_letters)
+    + "_"
+    + result_df["Count"]
 )
 
 workbook = load_workbook(FILE_PATH)
