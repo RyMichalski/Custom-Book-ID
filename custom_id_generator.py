@@ -4,18 +4,21 @@
 """
 
 import re
+from pathlib import Path
 
 import pandas as pd
+from openpyxl import load_workbook
 
 from nameparser import HumanName
 from nameparser.config import CONSTANTS
 
-FILE_PATH = (
-    "C:/Users/rymic/Documents/Python/Projects/Custom Book ID/Test Name Files.xlsx"
-)
+FILE_PATH = Path("Dev Testing.xlsx")
 
-# Read the CSV file into a DataFrame
-df = pd.read_excel(FILE_PATH)
+
+# Read the excel file into the primary DataFrame
+df = pd.read_excel(
+    FILE_PATH, sheet_name="Sheet1", usecols=("Author", "Title", "Custom ID")
+)
 
 
 def extract_first_letters(title):
@@ -47,8 +50,8 @@ def extract_first_letters(title):
 
 def process_author_initials(row):
     """
-    Extracts and formats author initials from the "Author" column when
-    only one author is present.
+    Extracts and formats author initials from the "Author" column by checking
+    for the character "&" and either .
 
     Args:
         row (pd.Series): A single row of the DataFrame.
@@ -103,6 +106,7 @@ def count_books(result_df):
 
 count_books(result_df)
 
+
 # Create new Custom ID column and apply it
 
 result_df["Custom ID"] = result_df.apply(
@@ -110,25 +114,13 @@ result_df["Custom ID"] = result_df.apply(
     axis=1,
 )
 
+workbook = load_workbook(FILE_PATH)
+sheet = workbook["Sheet1"]
 
-# adding in the combined initials column
-df = pd.concat([df, result_df["Custom ID"]], axis=1)
 
-del df["Author"]
-del df["Title"]
+# Writes the "Custom ID" values from the DataFrame to original spreadsheet, starting in cell C2.
+for index, r in enumerate(result_df["Custom ID"], start=2):
+    sheet.cell(row=index, column=3, value=r)
 
-# Overwrite the existing Excel file with the modified DataFrame
-with pd.ExcelWriter(FILE_PATH, mode="a", if_sheet_exists="overlay") as writer:
-    existing_sheet = writer.sheets["sheet1"]
-    startcol = existing_sheet.max_column + 1
-    df.to_excel(
-        writer,
-        sheet_name="sheet1",
-        index=False,
-        startcol=startcol,
-    )
-
-# with pd.ExcelWriter(FILE_PATH) as writer:
-#   df.to_excel(writer, sheet_name="Test Name Files", index=False)
-
-# print(df)
+# Save the file with the Custom ID data populated.
+workbook.save(FILE_PATH)
