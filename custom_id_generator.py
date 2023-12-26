@@ -50,37 +50,45 @@ def extract_first_letters(title):
 
 def process_author_initials(row):
     """
-    Extracts and formats author initials from the "Author" column by checking
-    for the character "&" and either .
+    Process the 'Author' column in the given DataFrame row to extract and format author initials.
 
-    Args:
-        row (pd.Series): A single row of the DataFrame.
+    This function checks for the presence of the '&' character in the 'Author' column and processes
+    the author information accordingly. It assigns formatted initials to the 'initials' column.
+
+    Parameters:
+    - row (pd.Series): A single row of the DataFrame containing 'Author' information.
 
     Returns:
-        pd.Series: The row with the "initials" column added.
+    pd.Series: The row with updated data in column 'initials'.
+
+     Example:
+    >>> process_author_initials("Austin, Jane")
+    'JA'
+    >>> process_author_initials("Sanderson, Brandon & Patterson, Janci")
+    'BS&JP '
+
     """
 
     CONSTANTS.initials_format = "{first}{last}"
 
     # Check if the condition is met for this row
-    if "&" not in row["Author"]:
-        # Process for rows without "&"
-        row["initials"] = (
-            HumanName(row["Author"]).initials().replace(".", "").replace(" ", "")
-        )
-    else:
-        # Process for rows with "&"
-        authors = row["Author"].split("&")
-        row["Author1"] = authors[0].strip()
-        row["Author2"] = authors[1].strip() if len(authors) > 1 else ""
+    authors = row["Author"].split("&")
 
-        row["initials1"] = (
-            HumanName(row["Author1"]).initials().replace(".", "").replace(" ", "")
+    # Process each author and their initials
+    for i in range(1, len(authors) + 1):
+        key = f"Author{i}"
+        initials_key = f"initials{i}"
+        row[key] = authors[i - 1].strip()
+        row[initials_key] = (
+            HumanName(row[key]).initials().replace(".", "").replace(" ", "")
         )
-        row["initials2"] = (
-            HumanName(row["Author2"]).initials().replace(".", "").replace(" ", "")
-        )
-        row["initials"] = row["initials1"] + "&" + row["initials2"]
+
+    # Combine initials when multiple authors are present
+    row["initials"] = "&".join(row[f"initials{i}"] for i in range(1, len(authors) + 1))
+
+    # Drop intermediate columns
+    row.drop([f"Author{i}" for i in range(1, len(authors) + 1)], inplace=True)
+    row.drop([f"initials{i}" for i in range(1, len(authors) + 1)], inplace=True)
 
     return row
 
