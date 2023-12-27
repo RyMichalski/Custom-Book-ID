@@ -10,7 +10,7 @@ import pandas as pd
 from openpyxl import load_workbook
 
 from nameparser import HumanName
-from nameparser.config import CONSTANTS
+
 
 FILE_PATH = Path("Dev Testing.xlsx")
 
@@ -52,7 +52,7 @@ def process_author_initials(row):
     """
     Process the 'Author' column in the given DataFrame row to extract and format author initials.
 
-    This function checks for the presence of the '&' character in the 'Author' column and processes
+    This checks for the presence of the '&' character in the 'Author' column and processes
     the author information accordingly. It assigns formatted initials to the 'initials' column.
 
     Parameters:
@@ -66,29 +66,19 @@ def process_author_initials(row):
     'JA'
     >>> process_author_initials("Sanderson, Brandon & Patterson, Janci")
     'BS&JP '
-
     """
-
-    CONSTANTS.initials_format = "{first}{last}"
 
     # Check if the condition is met for this row
     authors = row["Author"].split("&")
 
     # Process each author and their initials
-    for i in range(1, len(authors) + 1):
-        key = f"Author{i}"
-        initials_key = f"initials{i}"
-        row[key] = authors[i - 1].strip()
-        row[initials_key] = (
-            HumanName(row[key]).initials().replace(".", "").replace(" ", "")
-        )
+    initials = []
+    for author in authors:
+        author = author.strip()
+        initials.append(HumanName(author).initials().replace(".", "").replace(" ", ""))
 
     # Combine initials when multiple authors are present
-    row["initials"] = "&".join(row[f"initials{i}"] for i in range(1, len(authors) + 1))
-
-    # Drop intermediate columns
-    row.drop([f"Author{i}" for i in range(1, len(authors) + 1)], inplace=True)
-    row.drop([f"initials{i}" for i in range(1, len(authors) + 1)], inplace=True)
+    row["initials"] = "&".join(initials)
 
     return row
 
@@ -99,10 +89,11 @@ result_df = df.apply(process_author_initials, axis=1)
 
 # Count number of books by author and iterate up by one.
 def count_books(input_df):
-    """Adds a "Count" column and assigns a unique two-digit count for each author's occurrences.
+    """
+    Adds a "Count" column and assigns a unique two-digit count for each author's occurrences.
 
     Args:
-        result_df (pd.DataFrame): DataFrame containing an "Author" column.
+        input_df (pd.DataFrame): DataFrame containing an "Author" column.
 
     Returns:
         pd.DataFrame: The modified DataFrame with the "Count" column added and values added.
@@ -120,13 +111,24 @@ result_df = count_books(result_df)
 
 
 # Create new Custom ID
-result_df["Custom ID"] = (
-    result_df["initials"]
-    + "_"
-    + result_df["Title"].apply(extract_first_letters)
-    + "_"
-    + result_df["Count"]
-)
+def create_custom_id(row):
+    """
+    Creates a new "Custom ID" column by combining the "initials", "Title", and "Count" columns.
+
+    Args:
+        row (pd.Series): A single row of the df with "initials", "Title", and "Count" columns.
+
+    Returns:
+        pd.Series: The row with the new "Custom ID" column added.
+    """
+    row["Custom ID"] = (
+        row["initials"] + "_" + extract_first_letters(row["Title"]) + "_" + row["Count"]
+    )
+    return row
+
+
+result_df = result_df.apply(create_custom_id, axis=1)
+
 
 workbook = load_workbook(FILE_PATH)
 sheet = workbook["Sheet1"]
