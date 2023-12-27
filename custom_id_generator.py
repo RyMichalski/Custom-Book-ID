@@ -4,18 +4,21 @@
 """
 
 import re
+from pathlib import Path
 
 import pandas as pd
+from openpyxl import load_workbook
 
 from nameparser import HumanName
-from nameparser.config import CONSTANTS
 
-FILE_PATH = (
-    "C:/Users/rymic/Documents/Python/Projects/Custom Book ID/Test Name Files.xlsx"
+
+FILE_PATH = Path("Dev Testing.xlsx")
+
+
+# Read the excel file into the primary DataFrame
+df = pd.read_excel(
+    FILE_PATH, sheet_name="Sheet1", usecols=("Author", "Title", "Custom ID")
 )
-
-# Read the CSV file into a DataFrame
-df = pd.read_excel(FILE_PATH)
 
 
 def extract_first_letters(title):
@@ -47,37 +50,35 @@ def extract_first_letters(title):
 
 def process_author_initials(row):
     """
-    Extracts and formats author initials from the "Author" column when
-    only one author is present.
+    Process the 'Author' column in the given DataFrame row to extract and format author initials.
 
-    Args:
-        row (pd.Series): A single row of the DataFrame.
+    This checks for the presence of the '&' character in the 'Author' column and processes
+    the author information accordingly. It assigns formatted initials to the 'initials' column.
+
+    Parameters:
+    - row (pd.Series): A single row of the DataFrame containing 'Author' information.
 
     Returns:
-        pd.Series: The row with the "initials" column added.
+    pd.Series: The row with updated data in column 'initials'.
+
+     Example:
+    >>> process_author_initials("Austin, Jane")
+    'JA'
+    >>> process_author_initials("Sanderson, Brandon & Patterson, Janci")
+    'BS&JP '
     """
 
-    CONSTANTS.initials_format = "{first}{last}"
-
     # Check if the condition is met for this row
-    if "&" not in row["Author"]:
-        # Process for rows without "&"
-        row["initials"] = (
-            HumanName(row["Author"]).initials().replace(".", "").replace(" ", "")
-        )
-    else:
-        # Process for rows with "&"
-        authors = row["Author"].split("&")
-        row["Author1"] = authors[0].strip()
-        row["Author2"] = authors[1].strip() if len(authors) > 1 else ""
+    authors = row["Author"].split("&")
 
-        row["initials1"] = (
-            HumanName(row["Author1"]).initials().replace(".", "").replace(" ", "")
-        )
-        row["initials2"] = (
-            HumanName(row["Author2"]).initials().replace(".", "").replace(" ", "")
-        )
-        row["initials"] = row["initials1"] + "&" + row["initials2"]
+    # Process each author and their initials
+    initials = []
+    for author in authors:
+        author = author.strip()
+        initials.append(HumanName(author).initials().replace(".", "").replace(" ", ""))
+
+    # Combine initials when multiple authors are present
+    row["initials"] = "&".join(initials)
 
     return row
 
@@ -87,35 +88,55 @@ result_df = df.apply(process_author_initials, axis=1)
 
 
 # Count number of books by author and iterate up by one.
-def count_books(result_df):
-    """Adds a "Count" column and assigns a unique two-digit count for each author's occurrences.
+def count_books(input_df):
+    """
+    Adds a "Count" column and assigns a unique two-digit count for each author's occurrences.
 
     Args:
-        result_df (pd.DataFrame): DataFrame containing an "Author" column.
+        input_df (pd.DataFrame): DataFrame containing an "Author" column.
 
     Returns:
         pd.DataFrame: The modified DataFrame with the "Count" column added and values added.
     """
-    result_df["Count"] = (
+    count_df = (
+        input_df.copy()
+    )  # Make a copy to avoid modifying the input DataFrame directly
+    count_df["Count"] = (
         result_df.groupby("Author").cumcount().add(1).astype(str).str.zfill(2)
     )
+    return count_df
 
 
-count_books(result_df)
-
-# Create new Custom ID column and apply it
-
-result_df["Custom ID"] = result_df.apply(
-    lambda row: f"{row['initials']}_{extract_first_letters((row['Title']))}_{row['Count']}",
-    axis=1,
-)
+result_df = count_books(result_df)
 
 
-# adding in the combined initials column
-df = pd.concat([df, result_df["Custom ID"]], axis=1)
+# Create new Custom ID
+def create_custom_id(row):
+    """
+    Creates a new "Custom ID" column by combining the "initials", "Title", and "Count" columns.
 
-# Overwrite the existing Excel file with the modified DataFrame
-with pd.ExcelWriter(FILE_PATH, mode="w") as writer:
-    df.to_excel(writer, sheet_name="Test Name Files", index=False)
+    Args:
+        row (pd.Series): A single row of the df with "initials", "Title", and "Count" columns.
 
-print(df)
+    Returns:
+        pd.Series: The row with the new "Custom ID" column added.
+    """
+    row["Custom ID"] = (
+        row["initials"] + "_" + extract_first_letters(row["Title"]) + "_" + row["Count"]
+    )
+    return row
+
+
+result_df = result_df.apply(create_custom_id, axis=1)
+
+
+workbook = load_workbook(FILE_PATH)
+sheet = workbook["Sheet1"]
+
+
+# Writes the "Custom ID" values from the DataFrame to original spreadsheet, starting in cell C2.
+for index, r in enumerate(result_df["Custom ID"], start=2):
+    sheet.cell(row=index, column=3, value=r)
+
+# Save the file with the Custom ID data populated.
+workbook.save(FILE_PATH)
