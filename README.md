@@ -4,15 +4,14 @@ This project is designed to read an Excel file, add a "Custom ID" column, and ge
 
 ## custom_id_generator.py
 
-This script is the main part of the project. It defines a `CustomIDGenerator` class that handles reading the Excel file, generating the custom IDs, and writing the updated data back to a new Excel file.
+This script is the main part of the project. It handles reading the Excel file, generating the custom IDs, and writing the updated data back to a new Excel file.
 
-The `CustomIDGenerator` class has the following methods:
+The script has the following functions:
 
-- `__init__(self, file_path)`: Initializes a new instance of the class, reads the Excel file into a DataFrame, and creates a list of `Book` objects.
-- `extract_first_letters(self, title)`: Extracts the first letters of each word in a title.
-- `process_author_initials(self, author)`: Processes an author's name to extract their initials.
-- `generate_ids(self)`: Generates a custom ID for each book and stores it in the `custom_id` property of the `Book` object.
-- `update_excel(self)`: Updates the 'Custom ID' column in the DataFrame and writes the updated DataFrame back to a new Excel file.
+- `extract_first_letters(title)`: Extracts the first letters of each word in a title.
+- `process_author_initials(author)`: Processes an author's name to extract their initials.
+- `generate_ids()`: Generates a custom ID for each book and stores it in the `custom_id` property of the `Book` object.
+- `update_excel()`: Updates the 'Custom ID' column in the DataFrame and writes the updated DataFrame back to a new Excel file.
 
 ## Usage
 
@@ -33,4 +32,5 @@ The `CustomIDGenerator` class has the following methods:
 - Ryan Michalski
 
 ## License
+
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
