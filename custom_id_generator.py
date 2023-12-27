@@ -98,7 +98,7 @@ result_df = df.apply(process_author_initials, axis=1)
 
 
 # Count number of books by author and iterate up by one.
-def count_books(result_df):
+def count_books(input_df):
     """Adds a "Count" column and assigns a unique two-digit count for each author's occurrences.
 
     Args:
@@ -107,12 +107,16 @@ def count_books(result_df):
     Returns:
         pd.DataFrame: The modified DataFrame with the "Count" column added and values added.
     """
-    result_df["Count"] = (
+    count_df = (
+        input_df.copy()
+    )  # Make a copy to avoid modifying the input DataFrame directly
+    count_df["Count"] = (
         result_df.groupby("Author").cumcount().add(1).astype(str).str.zfill(2)
     )
+    return count_df
 
 
-count_books(result_df)
+result_df = count_books(result_df)
 
 
 # Create new Custom ID
