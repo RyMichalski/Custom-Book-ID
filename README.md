@@ -15,11 +15,11 @@ The script has the following functions:
 
 ## Usage
 
-1. Install the required dependencies by running `pip install -r requirements.txt`.
+1. Install the required dependencies by running `pip install`.
 2. Place the Excel file you want to process in the same directory as this script. The script expects the Excel file to have the following columns: Author, Title, and a blank Custom ID column.
 3. Update the `FILE_PATH` variable in the script to match the name of your Excel file.
 4. Run the script using `python custom_id_generator.py`.
-5. The script will generate a new Excel file with the "Custom ID" column populated.
+5. The script will update the original Excel file with the "Custom ID" column populated.
 
 ## Dependencies
 
